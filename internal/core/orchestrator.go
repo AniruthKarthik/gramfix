@@ -1,74 +1,107 @@
 package core
 
 import (
-	"errors"
 	"log"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/user/gramfix/internal/adapters/platform"
 )
 
 func Run() error {
+	// Setup logging to file for debugging background execution
+	logFile, _ := os.OpenFile("/tmp/gramfix.log", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+	if logFile != nil {
+		defer logFile.Close()
+		log.SetOutput(logFile)
+	}
+	log.Println("--- gramfix session started ---")
+
+	// 0. Wait for hotkey (Alt+G) release to avoid modifier interference
+	time.Sleep(300 * time.Millisecond)
+
 	adapters, err := platform.Detect()
 	if err != nil {
+		log.Println("Detection error:", err)
 		return err
 	}
 
 	log.Printf("Using Clipboard: %T\n", adapters.Clipboard)
 	log.Printf("Using Injector: %T\n", adapters.Injector)
 
-	// 1. Get primary selection (selected text)
-	text, err := adapters.Clipboard.GetPrimary()
+	// 1. Save current clipboard
+	oldClip, _ := adapters.Clipboard.GetClipboard()
+
+	// 2. Trigger Copy (Ctrl+C) to capture selection reliably
+	log.Println("Triggering copy...")
+	if err := adapters.Injector.SendCopy(); err != nil {
+		log.Println("Copy trigger failed:", err)
+		// Fallback to primary selection if Copy fails
+		log.Println("Falling back to primary selection...")
+	}
+	
+	// Give the system a moment to update clipboard
+	time.Sleep(150 * time.Millisecond)
+
+	// 3. Get text from clipboard
+	text, err := adapters.Clipboard.GetClipboard()
 	if err != nil {
-		return errors.New("failed to get selected text: " + err.Error())
+		log.Println("Failed to get clipboard text:", err)
+		return err
 	}
 
-	if text == "" {
-		log.Println("No text selected.")
+	if strings.TrimSpace(text) == "" {
+		log.Println("No text found in clipboard.")
 		return nil
 	}
 
-	log.Printf("Selected text: %q\n", text)
+	log.Printf("Captured text: %q\n", text)
 
-	// 2. Correct text using Grammar Engine
+	// 4. Correct text
 	log.Println("Correcting text...")
 	corrected, err := adapters.Grammar.Correct(text)
 	if err != nil {
-		return errors.New("grammar correction failed: " + err.Error())
+		log.Println("Grammar error:", err)
+		return err
 	}
 
 	if corrected == text {
 		log.Println("No corrections needed.")
+		// Restore old clipboard just in case
+		if oldClip != "" {
+			_ = adapters.Clipboard.SetClipboard(oldClip)
+		}
 		return nil
 	}
 
 	log.Printf("Corrected text: %q\n", corrected)
 
-	// 3. Save current clipboard
-	oldClip, _ := adapters.Clipboard.GetClipboard()
-
-	// 4. Set clipboard to corrected text
+	// 5. Set clipboard to corrected text
 	if err := adapters.Clipboard.SetClipboard(corrected); err != nil {
-		return errors.New("failed to set clipboard: " + err.Error())
+		log.Println("Failed to set clipboard:", err)
+		return err
 	}
 
-	// Give the clipboard a tiny moment to sync
-	time.Sleep(100 * time.Millisecond)
+	// Wait for clipboard sync
+	time.Sleep(150 * time.Millisecond)
 
-	// 5. Inject Paste (Ctrl+V)
+	// 6. Inject Paste (Ctrl+V)
 	log.Println("Injecting paste...")
 	if err := adapters.Injector.SendPaste(); err != nil {
-		return errors.New("failed to inject text: " + err.Error())
+		log.Println("Paste injection failed:", err)
+		return err
 	}
 
-	// Give the system a moment to process the paste before restoring clipboard
-	time.Sleep(200 * time.Millisecond)
+	// Wait for paste to finish
+	time.Sleep(300 * time.Millisecond)
 
-	// 6. Restore original clipboard
+	// 7. Restore original clipboard
 	if oldClip != "" {
+		log.Println("Restoring original clipboard...")
 		_ = adapters.Clipboard.SetClipboard(oldClip)
 	}
 
-	log.Println("Done.")
+	log.Println("--- gramfix session finished successfully ---")
 	return nil
 }

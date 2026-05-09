@@ -20,3 +20,8 @@ func (w *WtypeInjector) SendPaste() error {
 	cmd := exec.Command("wtype", "-M", "ctrl", "v", "-m", "ctrl")
 	return cmd.Run()
 }
+
+func (w *WtypeInjector) SendCopy() error {
+	cmd := exec.Command("wtype", "-M", "ctrl", "c", "-m", "ctrl")
+	return cmd.Run()
+}

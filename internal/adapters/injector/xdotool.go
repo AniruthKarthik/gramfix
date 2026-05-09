@@ -12,6 +12,11 @@ func (x *XdotoolInjector) IsAvailable() bool {
 }
 
 func (x *XdotoolInjector) SendPaste() error {
-	cmd := exec.Command("xdotool", "key", "ctrl+v")
+	cmd := exec.Command("xdotool", "key", "--clearmodifiers", "ctrl+v")
+	return cmd.Run()
+}
+
+func (x *XdotoolInjector) SendCopy() error {
+	cmd := exec.Command("xdotool", "key", "--clearmodifiers", "ctrl+c")
 	return cmd.Run()
 }

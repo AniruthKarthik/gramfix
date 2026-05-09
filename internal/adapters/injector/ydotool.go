@@ -12,7 +12,13 @@ func (y *YdotoolInjector) IsAvailable() bool {
 }
 
 func (y *YdotoolInjector) SendPaste() error {
-	// 29 is left ctrl, 47 is v (keycodes might vary, but ydotool supports key combos directly)
+	// 29 is left ctrl, 47 is v
 	cmd := exec.Command("ydotool", "key", "29:1", "47:1", "47:0", "29:0")
+	return cmd.Run()
+}
+
+func (y *YdotoolInjector) SendCopy() error {
+	// 29 is left ctrl, 46 is c
+	cmd := exec.Command("ydotool", "key", "29:1", "46:1", "46:0", "29:0")
 	return cmd.Run()
 }
