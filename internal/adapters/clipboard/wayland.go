@@ -1,6 +1,7 @@
 package clipboard
 
 import (
+	"os"
 	"os/exec"
 	"strings"
 )
@@ -8,6 +9,11 @@ import (
 type WaylandClipboard struct{}
 
 func (w *WaylandClipboard) IsAvailable() bool {
+	waylandDisplay := os.Getenv("WAYLAND_DISPLAY")
+	sessionType := os.Getenv("XDG_SESSION_TYPE")
+	if waylandDisplay == "" && sessionType != "wayland" {
+		return false
+	}
 	_, err := exec.LookPath("wl-paste")
 	if err != nil {
 		return false

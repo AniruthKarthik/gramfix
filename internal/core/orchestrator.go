@@ -14,8 +14,8 @@ func Run() error {
 		return err
 	}
 
-	log.Println("Using Clipboard:", adapters.Clipboard)
-	log.Println("Using Injector:", adapters.Injector)
+	log.Printf("Using Clipboard: %T\n", adapters.Clipboard)
+	log.Printf("Using Injector: %T\n", adapters.Injector)
 
 	// 1. Get primary selection (selected text)
 	text, err := adapters.Clipboard.GetPrimary()

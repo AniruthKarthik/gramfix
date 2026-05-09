@@ -1,12 +1,16 @@
 package injector
 
 import (
+	"os"
 	"os/exec"
 )
 
 type WtypeInjector struct{}
 
 func (w *WtypeInjector) IsAvailable() bool {
+	if os.Getenv("WAYLAND_DISPLAY") == "" && os.Getenv("XDG_SESSION_TYPE") != "wayland" {
+		return false
+	}
 	_, err := exec.LookPath("wtype")
 	return err == nil
 }

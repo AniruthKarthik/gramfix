@@ -2,7 +2,7 @@ package grammar
 
 import (
 	"bytes"
-	"encoding/xml"
+	"encoding/json"
 	"errors"
 	"os"
 	"os/exec"
@@ -18,17 +18,25 @@ func (e *LanguageToolEngine) IsAvailable() bool {
 		return true
 	}
 	_, err = os.Stat("/usr/share/languagetool/languagetool-commandline.jar")
+	if err == nil {
+		return true
+	}
+	_, err = os.Stat("tmp/lt/languagetool-commandline.jar")
 	return err == nil
 }
 
-type Matches struct {
-	Errors []Error `xml:"error"`
+type LTResponse struct {
+	Matches []LTMatch `json:"matches"`
 }
 
-type Error struct {
-	Offset       int    `xml:"offset,attr"`
-	ErrorLength  int    `xml:"errorlength,attr"`
-	Replacements string `xml:"replacements,attr"`
+type LTMatch struct {
+	Offset       int             `json:"offset"`
+	Length       int             `json:"length"`
+	Replacements []LTReplacement `json:"replacements"`
+}
+
+type LTReplacement struct {
+	Value string `json:"value"`
 }
 
 func (e *LanguageToolEngine) Correct(text string) (string, error) {
@@ -38,9 +46,11 @@ func (e *LanguageToolEngine) Correct(text string) (string, error) {
 
 	var cmd *exec.Cmd
 	if _, err := exec.LookPath("languagetool"); err == nil {
-		cmd = exec.Command("languagetool", "--api", "-l", "en-US", "-")
+		cmd = exec.Command("languagetool", "--json", "-l", "en-US", "-")
+	} else if _, err := os.Stat("/usr/share/languagetool/languagetool-commandline.jar"); err == nil {
+		cmd = exec.Command("java", "-jar", "/usr/share/languagetool/languagetool-commandline.jar", "--json", "-l", "en-US", "-")
 	} else {
-		cmd = exec.Command("java", "-jar", "/usr/share/languagetool/languagetool-commandline.jar", "--api", "-l", "en-US", "-")
+		cmd = exec.Command("java", "-jar", "tmp/lt/languagetool-commandline.jar", "--json", "-l", "en-US", "-")
 	}
 
 	cmd.Stdin = strings.NewReader(text)
@@ -48,42 +58,72 @@ func (e *LanguageToolEngine) Correct(text string) (string, error) {
 	cmd.Stdout = &out
 	
 	err := cmd.Run()
-	// languagetool might exit with non-zero if errors are found, we still parse stdout.
 	if err != nil && out.Len() == 0 {
 		return "", errors.New("languagetool failed to execute: " + err.Error())
 	}
 
 	output := out.String()
-	xmlStart := strings.Index(output, "<?xml")
-	if xmlStart == -1 {
-		return text, nil // No valid XML output
+	jsonStart := strings.Index(output, "{")
+	jsonEnd := strings.LastIndex(output, "}")
+	if jsonStart == -1 || jsonEnd == -1 || jsonEnd < jsonStart {
+		return text, nil
 	}
-	xmlData := output[xmlStart:]
+	jsonData := output[jsonStart : jsonEnd+1]
 
-	var matches Matches
-	if err := xml.Unmarshal([]byte(xmlData), &matches); err != nil {
+	var resp LTResponse
+	if err := json.Unmarshal([]byte(jsonData), &resp); err != nil {
 		return "", err
 	}
 
-	// Apply corrections from back to front to avoid shifting offsets
-	sort.Slice(matches.Errors, func(i, j int) bool {
-		return matches.Errors[i].Offset > matches.Errors[j].Offset
+	matches := resp.Matches
+	// Filter overlapping matches: keep the first match that covers a span
+	var filtered []LTMatch
+	used := make([]bool, len(text))
+	for _, match := range matches {
+		if len(match.Replacements) == 0 || match.Replacements[0].Value == "" {
+			continue
+		}
+		start := match.Offset
+		end := start + match.Length
+		if start < 0 || end > len(text) {
+			continue
+		}
+		
+		overlap := false
+		for i := start; i < end; i++ {
+			if used[i] {
+				overlap = true
+				break
+			}
+		}
+		if !overlap {
+			filtered = append(filtered, match)
+			for i := start; i < end; i++ {
+				used[i] = true
+			}
+		}
+	}
+
+	// Apply corrections from back to front
+	sort.Slice(filtered, func(i, j int) bool {
+		return filtered[i].Offset > filtered[j].Offset
 	})
 
 	runes := []rune(text)
-	for _, err := range matches.Errors {
-		reps := strings.Split(err.Replacements, "#")
-		if len(reps) > 0 && reps[0] != "" {
-			replacement := reps[0]
-			start := err.Offset
-			end := start + err.ErrorLength
-			// Ensure offsets are within bounds (languagetool might use byte or char offsets, 
-			// assuming char/rune offsets)
-			if start >= 0 && end <= len(runes) && start <= end {
-				prefix := runes[:start]
-				suffix := runes[end:]
-				runes = append(append(prefix, []rune(replacement)...), suffix...)
-			}
+	for _, match := range filtered {
+		replacement := match.Replacements[0].Value
+		start := match.Offset
+		end := start + match.Length
+		// Re-validate bounds on runes just in case
+		if start >= 0 && end <= len(runes) && start <= end {
+			prefix := runes[:start]
+			suffix := runes[end:]
+			
+			var newRunes []rune
+			newRunes = append(newRunes, prefix...)
+			newRunes = append(newRunes, []rune(replacement)...)
+			newRunes = append(newRunes, suffix...)
+			runes = newRunes
 		}
 	}
 

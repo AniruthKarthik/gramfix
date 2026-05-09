@@ -1,6 +1,7 @@
 package clipboard
 
 import (
+	"errors"
 	"os/exec"
 	"strings"
 )
@@ -28,9 +29,9 @@ func (x *X11Clipboard) GetPrimary() (string, error) {
 	} else {
 		cmd = exec.Command("xsel", "-o", "-p")
 	}
-	out, err := cmd.Output()
+	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return "", err
+		return "", errors.New(string(out) + " : " + err.Error())
 	}
 	return string(out), nil
 }
