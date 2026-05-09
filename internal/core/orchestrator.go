@@ -18,7 +18,7 @@ func Run() error {
 	}
 	log.Println("--- gramfix session started ---")
 
-	// 0. Wait for hotkey (Alt+G) release to avoid modifier interference
+	// 0. Wait for hotkey release to avoid modifier interference
 	time.Sleep(300 * time.Millisecond)
 
 	adapters, err := platform.Detect()
@@ -30,33 +30,43 @@ func Run() error {
 	log.Printf("Using Clipboard: %T\n", adapters.Clipboard)
 	log.Printf("Using Injector: %T\n", adapters.Injector)
 
-	// 1. Save current clipboard
-	oldClip, _ := adapters.Clipboard.GetClipboard()
+	var text string
+	var oldClip string
+	var usedClipboard bool
 
-	// 2. Trigger Copy (Ctrl+C) to capture selection reliably
-	log.Println("Triggering copy...")
-	if err := adapters.Injector.SendCopy(); err != nil {
-		log.Println("Copy trigger failed:", err)
-		// Fallback to primary selection if Copy fails
-		log.Println("Falling back to primary selection...")
-	}
-	
-	// Give the system a moment to update clipboard
-	time.Sleep(150 * time.Millisecond)
+	// 1. Try Primary Selection first (highlighted text)
+	log.Println("Attempting to get Primary selection...")
+	text, err = adapters.Clipboard.GetPrimary()
+	if err == nil && strings.TrimSpace(text) != "" {
+		log.Printf("Captured via Primary: %q\n", text)
+	} else {
+		log.Println("Primary selection empty or failed, trying Ctrl+C...")
+		
+		// 2. Save current clipboard to restore later
+		oldClip, _ = adapters.Clipboard.GetClipboard()
+		usedClipboard = true
 
-	// 3. Get text from clipboard
-	text, err := adapters.Clipboard.GetClipboard()
-	if err != nil {
-		log.Println("Failed to get clipboard text:", err)
-		return err
+		// 3. Trigger Copy (Ctrl+C)
+		if err := adapters.Injector.SendCopy(); err != nil {
+			log.Println("Copy trigger failed:", err)
+		}
+		
+		// Give the system time to update clipboard
+		time.Sleep(300 * time.Millisecond)
+
+		text, err = adapters.Clipboard.GetClipboard()
+		if err != nil {
+			log.Println("Failed to get clipboard text:", err)
+			return err
+		}
 	}
 
 	if strings.TrimSpace(text) == "" {
-		log.Println("No text found in clipboard.")
+		log.Println("No text found to correct.")
 		return nil
 	}
 
-	log.Printf("Captured text: %q\n", text)
+	log.Printf("Final Captured text: %q\n", text)
 
 	// 4. Correct text
 	log.Println("Correcting text...")
@@ -68,23 +78,19 @@ func Run() error {
 
 	if corrected == text {
 		log.Println("No corrections needed.")
-		// Restore old clipboard just in case
-		if oldClip != "" {
-			_ = adapters.Clipboard.SetClipboard(oldClip)
-		}
 		return nil
 	}
 
 	log.Printf("Corrected text: %q\n", corrected)
 
-	// 5. Set clipboard to corrected text
+	// 5. Set clipboard to corrected text (we always use clipboard for pasting)
 	if err := adapters.Clipboard.SetClipboard(corrected); err != nil {
 		log.Println("Failed to set clipboard:", err)
 		return err
 	}
 
 	// Wait for clipboard sync
-	time.Sleep(150 * time.Millisecond)
+	time.Sleep(200 * time.Millisecond)
 
 	// 6. Inject Paste (Ctrl+V)
 	log.Println("Injecting paste...")
@@ -93,11 +99,11 @@ func Run() error {
 		return err
 	}
 
-	// Wait for paste to finish
-	time.Sleep(300 * time.Millisecond)
+	// Wait for paste to finish before restoring
+	time.Sleep(400 * time.Millisecond)
 
-	// 7. Restore original clipboard
-	if oldClip != "" {
+	// 7. Restore original clipboard if we used it or if we want to be clean
+	if usedClipboard && oldClip != "" {
 		log.Println("Restoring original clipboard...")
 		_ = adapters.Clipboard.SetClipboard(oldClip)
 	}
