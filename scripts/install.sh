@@ -49,4 +49,4 @@ echo "Installing gramfix to /usr/local/bin..."
 sudo make install
 
 echo "Installation complete."
-echo "You can now bind 'gramfix' to Ctrl+G in your desktop environment's custom shortcut settings."
+echo "You can now bind 'gramfix' to Alt+G in your desktop environment's custom shortcut settings."

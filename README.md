@@ -3,7 +3,7 @@
 A lightweight, cross-distro Linux offline grammar correction utility.
 
 ## Overview
-`gramfix` allows you to correct text globally across your Linux desktop. Simply select the text, press a hotkey (like `Ctrl+G`), and the text will be automatically corrected and replaced—completely offline, with no persistent daemons or API calls.
+`gramfix` allows you to correct text globally across your Linux desktop. Simply select the text, press a hotkey (like `Alt+G`), and the text will be automatically corrected and replaced—completely offline, with no persistent daemons or API calls.
 
 ## Architecture
 - **Offline & Local**: Uses `LanguageTool` locally to perform grammar checks. No data leaves your machine.
@@ -20,11 +20,11 @@ chmod +x scripts/install.sh
 ```
 
 ## Setup Hotkey
-Bind the `/usr/local/bin/gramfix` command to `Ctrl+G` using your Desktop Environment's custom keyboard shortcuts.
+Bind the `/usr/local/bin/gramfix` command to `Alt+G` using your Desktop Environment's custom keyboard shortcuts.
 
 ### GNOME
 1. Settings -> Keyboard -> Keyboard Shortcuts -> View and Customize Shortcuts -> Custom Shortcuts.
-2. Add a new shortcut: Name: "Gramfix", Command: `/usr/local/bin/gramfix`, Shortcut: `Ctrl+G`.
+2. Add a new shortcut: Name: "Gramfix", Command: `/usr/local/bin/gramfix`, Shortcut: `Alt+G`.
 
 ### KDE Plasma
 1. System Settings -> Shortcuts -> Custom Shortcuts.
