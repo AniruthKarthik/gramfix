@@ -92,13 +92,49 @@
       <rule>
         <pattern>
           <token regexp="yes">[Tt]heir</token>
-          <token regexp="yes">going|coming|trying|working|looking|playing|running|doing|getting|making|taking|having|saying|seeing|knowing|thinking|leaving|starting|showing|living|feeling|moving|turning|giving|waiting|standing|putting|bringing|talking|walking|sitting|letting|losing|winning|eating|sleeping|studying|planning|hoping|learning|watching|asking|helping|using|finding|setting|meeting</token>
+          <token>going</token>
         </pattern>
-        <message>Did you mean <suggestion>They're</suggestion> (they are)?
+        <message>Did you mean <suggestion>They're going</suggestion> (they are going)?
           "Their" is possessive; "they're" means "they are".</message>
-        <example correction="They're">
+        <example correction="They're going">
           <marker>Their going</marker> to the store after work.
         </example>
+      </rule>
+
+      <rule>
+        <pattern>
+          <token regexp="yes">[Tt]heir</token>
+          <token>coming</token>
+        </pattern>
+        <message>Did you mean <suggestion>They're coming</suggestion>?</message>
+        <example correction="They're coming"><marker>Their coming</marker> to the party.</example>
+      </rule>
+
+      <rule>
+        <pattern>
+          <token regexp="yes">[Tt]heir</token>
+          <token>trying</token>
+        </pattern>
+        <message>Did you mean <suggestion>They're trying</suggestion>?</message>
+        <example correction="They're trying"><marker>Their trying</marker> to help.</example>
+      </rule>
+
+      <rule>
+        <pattern>
+          <token regexp="yes">[Tt]heir</token>
+          <token>working</token>
+        </pattern>
+        <message>Did you mean <suggestion>They're working</suggestion>?</message>
+        <example correction="They're working"><marker>Their working</marker> on it.</example>
+      </rule>
+
+      <rule>
+        <pattern>
+          <token regexp="yes">[Tt]heir</token>
+          <token>planning</token>
+        </pattern>
+        <message>Did you mean <suggestion>They're planning</suggestion>?</message>
+        <example correction="They're planning"><marker>Their planning</marker> to leave.</example>
       </rule>
 
     </rulegroup>
@@ -119,12 +155,39 @@
 
       <rule id="GRAMFIX_PROJECT_REQUIRE" name="project require to project requires">
         <pattern>
-          <token regexp="yes">project|report|system|policy|plan|result|analysis|team|company|document|program|issue|problem|task|goal|strategy|process|solution|budget|proposal|study|review|survey|test|product|service|feature|module|component|update|version|release</token>
-          <token regexp="yes">require|provide|suggest|indicate|show|demonstrate|support|confirm|need|allow|enable|prevent|include|contain|produce|create|generate|cause|affect|impact|improve|increase|decrease|reduce|ensure|maintain|deliver|represent|reflect|define|determine|describe</token>
+          <token regexp="yes">project|report|system|policy|plan|analysis|company|document|program|issue|task|goal|strategy|process|solution|budget|proposal|study|review|survey|product|service|feature|module|component</token>
+          <token>require</token>
         </pattern>
-        <message>The singular subject requires a third-person singular verb.
-          Did you mean <suggestion>\1s</suggestion>?</message>
+        <message>The singular subject needs a third-person singular verb.
+          Did you mean <suggestion>requires</suggestion>?</message>
         <example correction="requires">The project <marker>require</marker> more resources.</example>
+      </rule>
+
+      <rule id="GRAMFIX_PROJECT_PROVIDE" name="project provide to project provides">
+        <pattern>
+          <token regexp="yes">project|report|system|policy|plan|analysis|company|document|program|issue|task|goal|strategy|process|solution|budget|proposal|study|review|survey|product|service|feature|module|component</token>
+          <token>provide</token>
+        </pattern>
+        <message>Did you mean <suggestion>provides</suggestion>?</message>
+        <example correction="provides">The system <marker>provide</marker> the data.</example>
+      </rule>
+
+      <rule id="GRAMFIX_PROJECT_SHOW" name="project show to project shows">
+        <pattern>
+          <token regexp="yes">project|report|result|analysis|study|review|survey|test|data</token>
+          <token>show</token>
+        </pattern>
+        <message>Did you mean <suggestion>shows</suggestion>?</message>
+        <example correction="shows">The analysis <marker>show</marker> a trend.</example>
+      </rule>
+
+      <rule id="GRAMFIX_PROJECT_NEED" name="project need to project needs">
+        <pattern>
+          <token regexp="yes">project|report|system|policy|plan|team|company|program|issue|task|process|solution|product|service|feature|module|component</token>
+          <token>need</token>
+        </pattern>
+        <message>Did you mean <suggestion>needs</suggestion>?</message>
+        <example correction="needs">The project <marker>need</marker> approval.</example>
       </rule>
 
     </rulegroup>
@@ -198,12 +261,10 @@
       <example correction="analyze">We need to <marker>analyse</marker> the data.</example>
     </rule>
 
-    <rule id="GRAMFIX_CHILDRENS" name="childrens to children">
-      <pattern><token regexp="yes">childrens</token></pattern>
-      <message>Did you mean <suggestion>children</suggestion>?
-        "Children" is already plural; "childrens" is not a word.</message>
-      <example correction="children">The <marker>childrens</marker> were playing outside.</example>
-    </rule>
+    <!--
+      GRAMFIX_CHILDRENS: disabled - LT Hunspell fires first and suggests
+      "children's" (possessive). Rely on built-in Hunspell instead.
+    -->
 
     <rule id="GRAMFIX_INFORMATIONS" name="informations to information">
       <pattern><token regexp="yes">informations</token></pattern>
