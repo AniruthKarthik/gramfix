@@ -52,7 +52,7 @@ uninstall:
 
 ## test: run unit tests
 test:
-	$(GO) test ./... -v -count=1
+	$(GO) test ./... -v -count=1 -timeout 120s
 
 ## vet: run go vet
 vet:
