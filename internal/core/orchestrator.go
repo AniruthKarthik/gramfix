@@ -107,6 +107,8 @@ func (o *Orchestrator) Run(ctx context.Context) error {
 	corrected, err := o.grammar.Fix(ctx, selected)
 	if err != nil {
 		log.Error("grammar fix failed: %v", err)
+		// Delete placeholder and restore original text
+		_ = o.inj.Backspace(len([]rune(Placeholder)))
 		_ = o.injectText(selected, true)
 		_ = o.restoreClipboard(originalClip)
 		return fmt.Errorf("grammar fix: %w", err)
@@ -114,6 +116,13 @@ func (o *Orchestrator) Run(ctx context.Context) error {
 	log.Info("corrected: %q", truncate(corrected, 80))
 
 	// ── Step 5: Replace placeholder with corrected text ────────────────────
+	// Delete the placeholder first
+	placeholderLen := len([]rune(Placeholder))
+	log.Debug("deleting placeholder (%d chars)", placeholderLen)
+	if err := o.inj.Backspace(placeholderLen); err != nil {
+		log.Warn("failed to delete placeholder: %v", err)
+	}
+
 	if err := o.injectText(corrected, true); err != nil {
 		return fmt.Errorf("inject corrected text: %w", err)
 	}

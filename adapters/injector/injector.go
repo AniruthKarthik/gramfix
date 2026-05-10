@@ -142,6 +142,48 @@ func (inj *Injector) PasteFromClipboard() error {
 	return inj.runPaste(tool)
 }
 
+// Backspace sends the backspace key 'count' times to delete text.
+func (inj *Injector) Backspace(count int) error {
+	if count <= 0 {
+		return nil
+	}
+	tool, err := inj.bestTool()
+	if err != nil {
+		return err
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), injectTimeout)
+	defer cancel()
+
+	var cmd *exec.Cmd
+	switch tool {
+	case "ydotool":
+		args := []string{"key", "--key-delay=12"}
+		for i := 0; i < count; i++ {
+			args = append(args, "14:1", "14:0")
+		}
+		cmd = exec.CommandContext(ctx, "ydotool", args...)
+		setYdotoolEnv(cmd)
+	case "wtype":
+		args := []string{}
+		for i := 0; i < count; i++ {
+			args = append(args, "-k", "BackSpace")
+		}
+		cmd = exec.CommandContext(ctx, "wtype", args...)
+	case "xdotool":
+		cmd = exec.CommandContext(ctx, "xdotool", "key", "--repeat", fmt.Sprintf("%d", count), "--delay", "12", "BackSpace")
+	default:
+		return fmt.Errorf("unknown tool: %s", tool)
+	}
+
+	log.Debug("inject backspace via %s (%d times)", tool, count)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("inject backspace (%s): %w\noutput: %s", tool, err, string(out))
+	}
+	return nil
+}
+
 // runType executes the text injection command.
 func (inj *Injector) runType(tool, text string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), injectTimeout)
