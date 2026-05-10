@@ -1,0 +1,4 @@
+*.txt
+tmp/
+build/
+*.log

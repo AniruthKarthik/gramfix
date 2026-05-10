@@ -1,0 +1,16 @@
+[Unit]
+Description=GramFix Hotkey Daemon (Alt+G grammar correction)
+Documentation=https://github.com/anilnair00/gramfix
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=__HOTKEY_BIN__ --gramfix=__GRAMFIX_BIN__
+Restart=on-failure
+RestartSec=5s
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=graphical-session.target
