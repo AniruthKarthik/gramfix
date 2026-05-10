@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  GramFix custom LanguageTool rules.
+  Loaded via: java -jar languagetool-commandline.jar
+              -rulefile gramfix-custom.xml
+
+  Each rule targets a pattern that is either:
+    (a) not covered by LT default English ruleset, or
+    (b) a high-precision complement to built-in rules.
+
+  Rule ID naming convention: GRAMFIX_<CATEGORY>_<SHORTNAME>
+
+  NOTE: Keep this file syntactically clean. LT will refuse to start if any
+  rule has malformed XML or unsupported pattern syntax. Test with:
+    java -jar languagetool-commandline.jar -rulefile gramfix-custom.xml
+         -language en-US /dev/null
+-->
+<rules lang="en">
+  <category id="GRAMFIX_MODAL" name="Modal Verb Errors">
+
+    <!--
+      "could/should/would/must/might of" → "could/should/would/must/might have"
+      These are one of the most common grammar errors in informal writing.
+      LT's built-in MODAL_OF and COULD_OF rules catch most of these, but we
+      add explicit rules for completeness and to ensure the right replacement
+      appears first.
+    -->
+    <rule id="GRAMFIX_COULD_OF" name="could of → could have">
+      <pattern>
+        <token>could</token>
+        <token>of</token>
+      </pattern>
+      <message>Did you mean <suggestion>could have</suggestion>?
+        "Could of" is a misspelling of "could have" (or "could've").</message>
+      <url>https://www.grammarly.com/blog/could-have-vs-could-of/</url>
+      <example correction="could have">I <marker>could of</marker> handled that better.</example>
+    </rule>
+
+    <rule id="GRAMFIX_SHOULD_OF" name="should of → should have">
+      <pattern>
+        <token>should</token>
+        <token>of</token>
+      </pattern>
+      <message>Did you mean <suggestion>should have</suggestion>?</message>
+      <example correction="should have">You <marker>should of</marker> known.</example>
+    </rule>
+
+    <rule id="GRAMFIX_WOULD_OF" name="would of → would have">
+      <pattern>
+        <token>would</token>
+        <token>of</token>
+      </pattern>
+      <message>Did you mean <suggestion>would have</suggestion>?</message>
+      <example correction="would have">She <marker>would of</marker> helped.</example>
+    </rule>
+
+    <rule id="GRAMFIX_MUST_OF" name="must of → must have">
+      <pattern>
+        <token>must</token>
+        <token>of</token>
+      </pattern>
+      <message>Did you mean <suggestion>must have</suggestion>?</message>
+      <example correction="must have">He <marker>must of</marker> left early.</example>
+    </rule>
+
+    <rule id="GRAMFIX_MIGHT_OF" name="might of → might have">
+      <pattern>
+        <token>might</token>
+        <token>of</token>
+      </pattern>
+      <message>Did you mean <suggestion>might have</suggestion>?</message>
+      <example correction="might have">They <marker>might of</marker> missed it.</example>
+    </rule>
+
+  </category>
+
+  <category id="GRAMFIX_SPELLING" name="Common Misspellings">
+
+    <rule id="GRAMFIX_ALOT" name="alot → a lot">
+      <pattern><token>alot</token></pattern>
+      <message>Did you mean <suggestion>a lot</suggestion>? "Alot" is not a standard word.</message>
+      <example correction="a lot">I learned <marker>alot</marker> today.</example>
+    </rule>
+
+    <rule id="GRAMFIX_IRREGARDLESS" name="irregardless → regardless">
+      <pattern><token regexp="yes">irregardless|irregardlessly</token></pattern>
+      <message>Did you mean <suggestion>regardless</suggestion>?
+        "Irregardless" is non-standard; use "regardless".</message>
+      <example correction="regardless"><marker>Irregardless</marker> of the outcome, we continue.</example>
+    </rule>
+
+    <rule id="GRAMFIX_SUPPOSABLY" name="supposably → supposedly">
+      <pattern><token>supposably</token></pattern>
+      <message>Did you mean <suggestion>supposedly</suggestion>?</message>
+      <example correction="supposedly">It was <marker>supposably</marker> finished.</example>
+    </rule>
+
+    <rule id="GRAMFIX_DEFINATELY" name="definately → definitely">
+      <pattern><token regexp="yes">definately|definitly|definetly</token></pattern>
+      <message>Did you mean <suggestion>definitely</suggestion>?</message>
+      <example correction="definitely">I will <marker>definately</marker> attend.</example>
+    </rule>
+
+    <rule id="GRAMFIX_OCCURED" name="occured → occurred">
+      <pattern><token regexp="yes">occured|occurance|occurrance</token></pattern>
+      <message>Did you mean <suggestion>occurred</suggestion> or <suggestion>occurrence</suggestion>?</message>
+      <example correction="occurred">The error <marker>occured</marker> yesterday.</example>
+    </rule>
+
+    <rule id="GRAMFIX_RECIEVE" name="recieve → receive">
+      <pattern><token regexp="yes">recieve|recieved|recieves|recieving</token></pattern>
+      <message>Did you mean <suggestion>receive</suggestion>?</message>
+      <example correction="receive">Did you <marker>recieve</marker> the message?</example>
+    </rule>
+
+    <rule id="GRAMFIX_SEPERATE" name="seperate → separate">
+      <pattern><token regexp="yes">seperate|seperated|seperates|seperating|seperation</token></pattern>
+      <message>Did you mean <suggestion>separate</suggestion>?</message>
+      <example correction="separate">Keep them <marker>seperate</marker>.</example>
+    </rule>
+
+    <rule id="GRAMFIX_UNTILL" name="untill → until">
+      <pattern><token regexp="yes">untill|untl</token></pattern>
+      <message>Did you mean <suggestion>until</suggestion>?</message>
+      <example correction="until">Wait <marker>untill</marker> tomorrow.</example>
+    </rule>
+
+    <rule id="GRAMFIX_ANALYSE_EN_US" name="analyse → analyze (American English)">
+      <pattern><token regexp="yes">analyse|analyses|analysed|analysing</token></pattern>
+      <message>In American English, use <suggestion>analyze</suggestion> (not "analyse").</message>
+      <example correction="analyze">We need to <marker>analyse</marker> the data.</example>
+    </rule>
+
+  </category>
+
+</rules>

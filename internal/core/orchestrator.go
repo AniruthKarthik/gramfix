@@ -31,14 +31,15 @@ const modifierSettleDelay = 150 * time.Millisecond
 
 // Config holds runtime configuration for the orchestrator.
 type Config struct {
-	Language string // LanguageTool language code, e.g. "en-US"
-	Debug    bool
+	// EngineConfig is passed directly to the grammar engine.
+	grammar.EngineConfig
+	Debug bool
 }
 
 // DefaultConfig returns sane defaults.
 func DefaultConfig() Config {
 	return Config{
-		Language: "en-US",
+		EngineConfig: grammar.DefaultEngineConfig(),
 	}
 }
 
@@ -59,7 +60,7 @@ func New(cfg Config) (*Orchestrator, error) {
 	clip := clipboard.New(sess)
 	inj := injector.New(sess)
 
-	eng, err := grammar.New(cfg.Language)
+	eng, err := grammar.NewWithConfig(cfg.EngineConfig)
 	if err != nil {
 		return nil, fmt.Errorf("grammar engine: %w", err)
 	}

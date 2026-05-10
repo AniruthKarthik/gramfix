@@ -1,5 +1,5 @@
 # GramFix Makefile
-# Builds both the gramfix pipeline binary and the gramfix-hotkey daemon.
+# Builds all gramfix binaries, installs services, and runs benchmarks.
 
 BINARY_NAME   := gramfix
 HOTKEY_NAME   := gramfix-hotkey
@@ -11,7 +11,7 @@ GO            := go
 GOFLAGS       := -trimpath
 LDFLAGS       := -s -w
 
-.PHONY: all build clean install uninstall test vet fmt
+.PHONY: all build clean install uninstall test vet fmt lt-server bench
 
 all: build
 
@@ -44,10 +44,32 @@ systemd: install
 	systemctl --user enable --now gramfix-hotkey.service
 	@echo "gramfix-hotkey service enabled and started"
 
+## lt-server: install optional local LanguageTool HTTP server as a systemd user service
+lt-server:
+	@mkdir -p $(HOME)/.config/systemd/user
+	cp scripts/gramfix-lt-server.service $(HOME)/.config/systemd/user/gramfix-lt-server.service
+	systemctl --user daemon-reload
+	systemctl --user enable --now gramfix-lt-server.service
+	@echo "gramfix-lt-server service enabled (port 8081)"
+	@echo "Set GRAMFIX_LT_SERVER_URL=http://localhost:8081 in configs/gramfix.conf to use it"
+
+## lt-server-stop: disable the optional LanguageTool HTTP server
+lt-server-stop:
+	-systemctl --user disable --now gramfix-lt-server.service 2>/dev/null
+	-rm -f $(HOME)/.config/systemd/user/gramfix-lt-server.service
+	-systemctl --user daemon-reload 2>/dev/null
+	@echo "gramfix-lt-server service removed"
+
+## bench: run accuracy benchmark against testdata/corpus.txt
+bench: build
+	@bash scripts/bench.sh
+
 ## uninstall: remove binaries and systemd service
 uninstall:
 	-systemctl --user disable --now gramfix-hotkey.service 2>/dev/null
+	-systemctl --user disable --now gramfix-lt-server.service 2>/dev/null
 	-rm -f $(HOME)/.config/systemd/user/gramfix-hotkey.service
+	-rm -f $(HOME)/.config/systemd/user/gramfix-lt-server.service
 	-systemctl --user daemon-reload 2>/dev/null
 	rm -f $(INSTALL_DIR)/$(BINARY_NAME)
 	rm -f $(INSTALL_DIR)/$(HOTKEY_NAME)

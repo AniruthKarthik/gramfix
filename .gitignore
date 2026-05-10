@@ -1,4 +1,5 @@
 *.txt
+!testdata/*.txt
 tmp/
 build/
 *.log

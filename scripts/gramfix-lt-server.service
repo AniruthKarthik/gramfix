@@ -1,0 +1,33 @@
+[Unit]
+Description=LanguageTool local HTTP server (GramFix)
+Documentation=https://github.com/anilnair00/gramfix
+After=network.target
+
+[Service]
+Type=simple
+# Tune heap: 128m idle, 300m peak — stays under typical desktop RAM budgets.
+# Port 8081 is localhost-only; --public restricts to loopback in LT 6.x.
+ExecStart=/usr/bin/java \
+  -Xms64m -Xmx300m \
+  -XX:+UseSerialGC \
+  -XX:TieredStopAtLevel=1 \
+  -Dfile.encoding=UTF-8 \
+  -cp /usr/share/languagetool/languagetool-server.jar \
+  org.languagetool.server.HTTPServer \
+  --port 8081 \
+  --allow-origin "" \
+  --public
+
+# Restart on crash but not on deliberate stop (systemctl stop)
+Restart=on-failure
+RestartSec=5s
+
+# Memory guard — OOM killer will target this service before the desktop
+MemoryMax=350M
+
+# Keep it out of the way of interactive tasks
+Nice=10
+IOSchedulingClass=idle
+
+[Install]
+WantedBy=default.target

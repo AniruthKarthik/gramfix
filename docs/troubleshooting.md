@@ -3,7 +3,10 @@
 ## Quick Diagnostic
 
 ```bash
-# Run in debug mode to see what's happening
+# Run the built-in diagnostic tool
+gramfix-check
+
+# Run in debug mode to trace each pipeline step
 gramfix --debug
 
 # Check hotkey daemon status
@@ -150,13 +153,24 @@ gramfix found no text in the primary selection or clipboard.
 
 ## Issue: High latency (takes more than 10 seconds)
 
-LanguageTool has JVM startup overhead (~3-5s normally). Longer times indicate:
+LanguageTool has JVM startup overhead (~2-4s normally, tuned with `-Xms64m -Xmx256m -XX:+UseSerialGC -XX:TieredStopAtLevel=1`). Longer times indicate:
 
-1. **System under memory pressure** — JVM startup is slower with low RAM
-2. **Very long text** — LanguageTool processes the full text; limit to paragraphs
-3. **Cold JVM** — first run is always slower; subsequent runs use JVM class cache
+1. **System under memory pressure** — JVM startup is slower with low available RAM
+2. **Very long text** — LanguageTool processes the full text; limit to a few paragraphs
+3. **Cold disk cache** — first run after boot is always slower
 
-**There is no way to eliminate JVM startup latency** without running a persistent server (which violates the no-persistent-process design). This is a known trade-off.
+**To get sub-200ms latency**, enable the optional local LT HTTP server:
+
+```bash
+make lt-server
+```
+
+Then set in `configs/gramfix.conf`:
+```ini
+GRAMFIX_LT_SERVER_URL=http://localhost:8081
+```
+
+GramFix falls back to the CLI JAR automatically if the server is not running.
 
 ---
 
@@ -177,6 +191,35 @@ systemctl --user restart gramfix-hotkey
 
 ---
 
+## Issue: Too many corrections / false positives
+
+Lower the confidence threshold to reduce aggressive corrections:
+
+```bash
+gramfix --confidence 75   # stricter: fewer but more reliable corrections
+gramfix --confidence 50   # looser: more corrections, some may be wrong
+```
+
+Or disable specific noisy rule IDs:
+
+```bash
+gramfix --disabled-rules UPPERCASE_SENTENCE_START,EN_QUOTES,MORFOLOGIK_RULE_EN_US
+```
+
+---
+
+## Issue: Missing corrections / known errors not caught
+
+1. Check the confidence threshold is not too high (`GRAMFIX_CONFIDENCE=60` is default).
+2. Verify enabled categories cover the relevant area:
+   ```bash
+   gramfix --debug --enabled-categories TYPOS,GRAMMAR,CONFUSED_WORDS,PUNCTUATION
+   ```
+3. For confusion pairs (`their/there`, `affect/effect`, `its/it's`): these need the
+   n-gram language model. See the n-gram section in the README.
+
+---
+
 ## Debug Log Location
 
 ```bash
@@ -188,6 +231,7 @@ tail -f ~/.local/share/gramfix/gramfix.log
 
 # Service logs
 journalctl --user -u gramfix-hotkey -f
+journalctl --user -u gramfix-lt-server -f   # if LT server is installed
 ```
 
 ---
