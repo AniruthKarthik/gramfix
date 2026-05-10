@@ -3,6 +3,7 @@
 
 BINARY_NAME   := gramfix
 HOTKEY_NAME   := gramfix-hotkey
+CHECK_NAME    := gramfix-check
 BUILD_DIR     := build
 INSTALL_DIR   ?= $(HOME)/.local/bin
 
@@ -14,18 +15,20 @@ LDFLAGS       := -s -w
 
 all: build
 
-## build: compile both binaries into build/
+## build: compile all binaries into build/
 build:
 	@mkdir -p $(BUILD_DIR)
 	$(GO) build $(GOFLAGS) -ldflags "$(LDFLAGS)" -o $(BUILD_DIR)/$(BINARY_NAME) ./cmd/gramfix
 	$(GO) build $(GOFLAGS) -ldflags "$(LDFLAGS)" -o $(BUILD_DIR)/$(HOTKEY_NAME) ./cmd/gramfix-hotkey
-	@echo "Built $(BUILD_DIR)/$(BINARY_NAME) and $(BUILD_DIR)/$(HOTKEY_NAME)"
+	$(GO) build $(GOFLAGS) -ldflags "$(LDFLAGS)" -o $(BUILD_DIR)/$(CHECK_NAME) ./cmd/gramfix-check
+	@echo "Built $(BUILD_DIR)/$(BINARY_NAME), $(BUILD_DIR)/$(HOTKEY_NAME), $(BUILD_DIR)/$(CHECK_NAME)"
 
 ## install: install binaries to INSTALL_DIR (default: ~/.local/bin)
 install: build
 	@mkdir -p $(INSTALL_DIR)
 	install -m 755 $(BUILD_DIR)/$(BINARY_NAME)  $(INSTALL_DIR)/$(BINARY_NAME)
 	install -m 755 $(BUILD_DIR)/$(HOTKEY_NAME)  $(INSTALL_DIR)/$(HOTKEY_NAME)
+	install -m 755 $(BUILD_DIR)/$(CHECK_NAME)   $(INSTALL_DIR)/$(CHECK_NAME)
 	@echo "Installed to $(INSTALL_DIR)"
 	@echo "Run 'make systemd' to install the systemd user service"
 

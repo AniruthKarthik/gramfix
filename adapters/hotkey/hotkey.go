@@ -95,11 +95,13 @@ func (d *Daemon) runEvdevFallback(ctx context.Context) error {
 }
 
 // writeXbindkeysConfig writes a temporary xbindkeys config file.
+// Uses "release" modifier so it fires on key-up, not on key-repeat.
 func (d *Daemon) writeXbindkeysConfig() (string, error) {
 	args := d.buildArgs()
-	content := fmt.Sprintf(`# gramfix hotkey (Alt+G)
+	// "release" ensures the command fires on key-up, preventing key-repeat storms
+	content := fmt.Sprintf(`# gramfix hotkey (Alt+G) — fires on key release
 "%s %s"
-  alt + g
+  alt + g + release
 `, d.gramfixBin, args)
 
 	f, err := os.CreateTemp("", "gramfix-xbindkeys-*.rc")
@@ -114,10 +116,13 @@ func (d *Daemon) writeXbindkeysConfig() (string, error) {
 }
 
 // writeSxhkdConfig writes a temporary sxhkd config file.
+// The '@' prefix makes sxhkd fire on key RELEASE, not key press.
+// This prevents key-repeat from spawning multiple gramfix instances.
 func (d *Daemon) writeSxhkdConfig() (string, error) {
 	args := d.buildArgs()
-	content := fmt.Sprintf(`# gramfix Alt+G
-alt + g
+	// '@' = trigger on key release (prevents key-repeat multi-fire)
+	content := fmt.Sprintf(`# gramfix Alt+G — @ fires on key release only
+@alt + g
 	%s %s
 `, d.gramfixBin, args)
 
