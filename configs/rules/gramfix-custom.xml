@@ -2,30 +2,30 @@
 <!--
   GramFix custom LanguageTool rules.
   Loaded via: java -jar languagetool-commandline.jar
-              -rulefile gramfix-custom.xml
+              -rulefile gramfix-custom.xml -language en-US
 
   Each rule targets a pattern that is either:
     (a) not covered by LT default English ruleset, or
-    (b) a high-precision complement to built-in rules.
+    (b) a high-precision complement to a built-in rule.
 
   Rule ID naming convention: GRAMFIX_<CATEGORY>_<SHORTNAME>
 
-  NOTE: Keep this file syntactically clean. LT will refuse to start if any
-  rule has malformed XML or unsupported pattern syntax. Test with:
-    java -jar languagetool-commandline.jar -rulefile gramfix-custom.xml
-         -language en-US /dev/null
+  IMPORTANT: The double-dash sequence is forbidden inside XML comments.
+  Use single dashes or reword. Test this file with:
+    java -jar languagetool-commandline.jar
+         -rulefile gramfix-custom.xml -language en-US /dev/null
 -->
 <rules lang="en">
+
+  <!-- ================================================================
+       CATEGORY: MODAL VERB ERRORS
+       "could/should/would/must/might of" -> "...have"
+       LT has MODAL_OF and COULD_OF but they may not catch all variants.
+       These rules provide belt-and-suspenders coverage.
+       ================================================================ -->
   <category id="GRAMFIX_MODAL" name="Modal Verb Errors">
 
-    <!--
-      "could/should/would/must/might of" → "could/should/would/must/might have"
-      These are one of the most common grammar errors in informal writing.
-      LT's built-in MODAL_OF and COULD_OF rules catch most of these, but we
-      add explicit rules for completeness and to ensure the right replacement
-      appears first.
-    -->
-    <rule id="GRAMFIX_COULD_OF" name="could of → could have">
+    <rule id="GRAMFIX_COULD_OF" name="could of to could have">
       <pattern>
         <token>could</token>
         <token>of</token>
@@ -36,7 +36,7 @@
       <example correction="could have">I <marker>could of</marker> handled that better.</example>
     </rule>
 
-    <rule id="GRAMFIX_SHOULD_OF" name="should of → should have">
+    <rule id="GRAMFIX_SHOULD_OF" name="should of to should have">
       <pattern>
         <token>should</token>
         <token>of</token>
@@ -45,7 +45,7 @@
       <example correction="should have">You <marker>should of</marker> known.</example>
     </rule>
 
-    <rule id="GRAMFIX_WOULD_OF" name="would of → would have">
+    <rule id="GRAMFIX_WOULD_OF" name="would of to would have">
       <pattern>
         <token>would</token>
         <token>of</token>
@@ -54,7 +54,7 @@
       <example correction="would have">She <marker>would of</marker> helped.</example>
     </rule>
 
-    <rule id="GRAMFIX_MUST_OF" name="must of → must have">
+    <rule id="GRAMFIX_MUST_OF" name="must of to must have">
       <pattern>
         <token>must</token>
         <token>of</token>
@@ -63,7 +63,7 @@
       <example correction="must have">He <marker>must of</marker> left early.</example>
     </rule>
 
-    <rule id="GRAMFIX_MIGHT_OF" name="might of → might have">
+    <rule id="GRAMFIX_MIGHT_OF" name="might of to might have">
       <pattern>
         <token>might</token>
         <token>of</token>
@@ -74,61 +74,189 @@
 
   </category>
 
+  <!-- ================================================================
+       CATEGORY: THEIR / THEY'RE CONFUSION
+       "their going" is a common confusion that LT's n-gram model handles
+       when ngram data is available, but the pattern-based rule below
+       catches the most common case without requiring n-gram data.
+       ================================================================ -->
+  <category id="GRAMFIX_THEIR_THEYRE" name="Their vs They are">
+
+    <!--
+      Pattern: "Their" + verb-like token (be, go, come, want, etc.)
+      This is the most common case: "Their going to the store."
+      We check for a set of common verbs that cannot follow a possessive.
+    -->
+    <rulegroup id="GRAMFIX_THEIR_VERB" name="their + verb (likely they are)">
+
+      <rule>
+        <pattern>
+          <token regexp="yes">[Tt]heir</token>
+          <token regexp="yes">going|coming|trying|working|looking|playing|running|doing|getting|making|taking|having|saying|seeing|knowing|thinking|leaving|starting|showing|living|feeling|moving|turning|giving|waiting|standing|putting|bringing|talking|walking|sitting|letting|losing|winning|eating|sleeping|studying|planning|hoping|learning|watching|asking|helping|using|finding|setting|meeting</token>
+        </pattern>
+        <message>Did you mean <suggestion>They're</suggestion> (they are)?
+          "Their" is possessive; "they're" means "they are".</message>
+        <example correction="They're">
+          <marker>Their going</marker> to the store after work.
+        </example>
+      </rule>
+
+    </rulegroup>
+
+  </category>
+
+  <!-- ================================================================
+       CATEGORY: SUBJECT-VERB AGREEMENT (SIMPLE CASES)
+       Rules for the most common s-v agreement errors not caught by LT.
+       ================================================================ -->
+  <category id="GRAMFIX_SV_AGREEMENT" name="Subject-Verb Agreement">
+
+    <!--
+      "the X require" / "the X provide" / etc. (singular subject + bare verb)
+      LT catches agreement at sentence start but not mid-sentence.
+    -->
+    <rulegroup id="GRAMFIX_SINGULAR_VERB" name="Singular noun + bare plural verb">
+
+      <rule id="GRAMFIX_PROJECT_REQUIRE" name="project require to project requires">
+        <pattern>
+          <token regexp="yes">project|report|system|policy|plan|result|analysis|team|company|document|program|issue|problem|task|goal|strategy|process|solution|budget|proposal|study|review|survey|test|product|service|feature|module|component|update|version|release</token>
+          <token regexp="yes">require|provide|suggest|indicate|show|demonstrate|support|confirm|need|allow|enable|prevent|include|contain|produce|create|generate|cause|affect|impact|improve|increase|decrease|reduce|ensure|maintain|deliver|represent|reflect|define|determine|describe</token>
+        </pattern>
+        <message>The singular subject requires a third-person singular verb.
+          Did you mean <suggestion>\1s</suggestion>?</message>
+        <example correction="requires">The project <marker>require</marker> more resources.</example>
+      </rule>
+
+    </rulegroup>
+
+  </category>
+
+  <!-- ================================================================
+       CATEGORY: COMMON MISSPELLINGS
+       High-precision one-to-one spelling corrections.
+       ================================================================ -->
   <category id="GRAMFIX_SPELLING" name="Common Misspellings">
 
-    <rule id="GRAMFIX_ALOT" name="alot → a lot">
+    <rule id="GRAMFIX_ALOT" name="alot to a lot">
       <pattern><token>alot</token></pattern>
       <message>Did you mean <suggestion>a lot</suggestion>? "Alot" is not a standard word.</message>
       <example correction="a lot">I learned <marker>alot</marker> today.</example>
     </rule>
 
-    <rule id="GRAMFIX_IRREGARDLESS" name="irregardless → regardless">
+    <rule id="GRAMFIX_IRREGARDLESS" name="irregardless to regardless">
       <pattern><token regexp="yes">irregardless|irregardlessly</token></pattern>
       <message>Did you mean <suggestion>regardless</suggestion>?
-        "Irregardless" is non-standard; use "regardless".</message>
+        "Irregardless" is non-standard. Use "regardless".</message>
       <example correction="regardless"><marker>Irregardless</marker> of the outcome, we continue.</example>
     </rule>
 
-    <rule id="GRAMFIX_SUPPOSABLY" name="supposably → supposedly">
+    <rule id="GRAMFIX_SUPPOSABLY" name="supposably to supposedly">
       <pattern><token>supposably</token></pattern>
       <message>Did you mean <suggestion>supposedly</suggestion>?</message>
       <example correction="supposedly">It was <marker>supposably</marker> finished.</example>
     </rule>
 
-    <rule id="GRAMFIX_DEFINATELY" name="definately → definitely">
-      <pattern><token regexp="yes">definately|definitly|definetly</token></pattern>
+    <rule id="GRAMFIX_DEFINATELY" name="definately to definitely">
+      <pattern><token regexp="yes">definately|definitly|definetly|definantly</token></pattern>
       <message>Did you mean <suggestion>definitely</suggestion>?</message>
       <example correction="definitely">I will <marker>definately</marker> attend.</example>
     </rule>
 
-    <rule id="GRAMFIX_OCCURED" name="occured → occurred">
-      <pattern><token regexp="yes">occured|occurance|occurrance</token></pattern>
-      <message>Did you mean <suggestion>occurred</suggestion> or <suggestion>occurrence</suggestion>?</message>
+    <rule id="GRAMFIX_OCCURANCE" name="occurance to occurrence">
+      <pattern><token regexp="yes">occurance|occurrance|occurence|ocurrence</token></pattern>
+      <message>Did you mean <suggestion>occurrence</suggestion>?</message>
+      <example correction="occurrence">The <marker>occurance</marker> of errors increased.</example>
+    </rule>
+
+    <rule id="GRAMFIX_OCCURED" name="occured to occurred">
+      <pattern><token regexp="yes">occured|occuring</token></pattern>
+      <message>Did you mean <suggestion>occurred</suggestion>?</message>
       <example correction="occurred">The error <marker>occured</marker> yesterday.</example>
     </rule>
 
-    <rule id="GRAMFIX_RECIEVE" name="recieve → receive">
-      <pattern><token regexp="yes">recieve|recieved|recieves|recieving</token></pattern>
+    <rule id="GRAMFIX_RECIEVE" name="recieve to receive">
+      <pattern><token regexp="yes">recieve|recieved|recieves|recieving|reciept</token></pattern>
       <message>Did you mean <suggestion>receive</suggestion>?</message>
       <example correction="receive">Did you <marker>recieve</marker> the message?</example>
     </rule>
 
-    <rule id="GRAMFIX_SEPERATE" name="seperate → separate">
+    <rule id="GRAMFIX_SEPERATE" name="seperate to separate">
       <pattern><token regexp="yes">seperate|seperated|seperates|seperating|seperation</token></pattern>
       <message>Did you mean <suggestion>separate</suggestion>?</message>
       <example correction="separate">Keep them <marker>seperate</marker>.</example>
     </rule>
 
-    <rule id="GRAMFIX_UNTILL" name="untill → until">
+    <rule id="GRAMFIX_UNTILL" name="untill to until">
       <pattern><token regexp="yes">untill|untl</token></pattern>
       <message>Did you mean <suggestion>until</suggestion>?</message>
       <example correction="until">Wait <marker>untill</marker> tomorrow.</example>
     </rule>
 
-    <rule id="GRAMFIX_ANALYSE_EN_US" name="analyse → analyze (American English)">
+    <rule id="GRAMFIX_ANALYSE_EN_US" name="analyse to analyze (American English)">
       <pattern><token regexp="yes">analyse|analyses|analysed|analysing</token></pattern>
       <message>In American English, use <suggestion>analyze</suggestion> (not "analyse").</message>
       <example correction="analyze">We need to <marker>analyse</marker> the data.</example>
+    </rule>
+
+    <rule id="GRAMFIX_CHILDRENS" name="childrens to children">
+      <pattern><token regexp="yes">childrens</token></pattern>
+      <message>Did you mean <suggestion>children</suggestion>?
+        "Children" is already plural; "childrens" is not a word.</message>
+      <example correction="children">The <marker>childrens</marker> were playing outside.</example>
+    </rule>
+
+    <rule id="GRAMFIX_INFORMATIONS" name="informations to information">
+      <pattern><token regexp="yes">informations</token></pattern>
+      <message>Did you mean <suggestion>information</suggestion>?
+        "Information" is an uncountable noun and has no plural form.</message>
+      <example correction="information">The <marker>informations</marker> are available online.</example>
+    </rule>
+
+    <rule id="GRAMFIX_ADVISE_NOUN" name="advise used as noun to advice">
+      <pattern>
+        <token regexp="yes">your|his|her|their|my|our|some|good|bad|any|this|that|the</token>
+        <token>advise</token>
+      </pattern>
+      <message>Did you mean <suggestion>advice</suggestion>?
+        "Advice" is the noun; "advise" is the verb.</message>
+      <example correction="advice">Thank you for your <marker>advise</marker>.</example>
+    </rule>
+
+  </category>
+
+  <!-- ================================================================
+       CATEGORY: CONFUSION PAIRS (backup for when n-gram data is absent)
+       ================================================================ -->
+  <category id="GRAMFIX_CONFUSION" name="Confusion Pair Backups">
+
+    <!--
+      "effect" used as a verb (should be "affect")
+      Pattern: modal/auxiliary + "effect" + object
+    -->
+    <rule id="GRAMFIX_EFFECT_VERB" name="effect as verb to affect">
+      <pattern>
+        <token regexp="yes">will|can|could|would|should|may|might|does|did|to</token>
+        <token>effect</token>
+        <token regexp="yes">\w+</token>
+      </pattern>
+      <message>Did you mean <suggestion>affect</suggestion>?
+        "Effect" is usually a noun; "affect" is the verb meaning "to influence".</message>
+      <example correction="affect">The new policy will <marker>effect everyone</marker> in the company.</example>
+    </rule>
+
+    <!--
+      "everyday" used where "every day" is needed (adverbial use)
+      Pattern: "everyday" + verb
+    -->
+    <rule id="GRAMFIX_EVERYDAY_ADV" name="everyday (adjective) vs every day (adverb)">
+      <pattern>
+        <token regexp="yes">everyday</token>
+        <token postag="VBZ|VBP|VBD|VB|VBG|VBN" postag_regexp="yes"/>
+      </pattern>
+      <message>Did you mean <suggestion>every day</suggestion>?
+        "Everyday" (one word) is an adjective meaning "ordinary".
+        "Every day" (two words) means "each day".</message>
+      <example correction="every day">I exercise <marker>everyday</marker> to stay healthy.</example>
     </rule>
 
   </category>

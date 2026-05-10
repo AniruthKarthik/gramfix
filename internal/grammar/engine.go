@@ -33,7 +33,7 @@ type EngineConfig struct {
 
 	// NgramDir is the path to a directory containing n-gram language model
 	// data.  When set, LT uses statistical scoring to resolve confusion pairs
-	// (their/there, affect/effect, …).  Leave empty to skip.
+	// (their/there, affect/effect, ...).  Leave empty to skip.
 	NgramDir string
 
 	// CustomRulesFile is the path to an extra LT XML rules file.
@@ -41,56 +41,100 @@ type EngineConfig struct {
 	CustomRulesFile string
 
 	// DisabledRules is a list of LT rule IDs to suppress.
-	// Defaults are set in DefaultEngineConfig() to reduce false positives on
-	// developer/technical writing.
 	DisabledRules []string
 
+	// EnabledRules is a list of LT rule IDs to explicitly enable, even if
+	// their category is otherwise disabled.  Use for high-value rules that
+	// are off by default in the installed LT version.
+	EnabledRules []string
+
 	// EnabledCategories restricts correction to these LT category IDs.
-	// An empty slice means "all categories" (LT default).
+	// An empty slice means "all categories" (LT default, recommended).
 	EnabledCategories []string
 
-	// ConfidenceMin is the minimum confidence score (0–100) a match must
-	// reach before being applied.  Matches below this threshold are silently
-	// skipped.  Default: 60.
+	// ConfidenceMin is the minimum confidence score (0-100) a match must
+	// reach before being applied.  Default: 55.
 	ConfidenceMin int
 
-	// ServerURL is the base URL of a local LanguageTool HTTP server
-	// (e.g. "http://localhost:8081").  When set the engine tries the server
-	// first and falls back to the CLI JAR on any error.
+	// Picky enables LT's PICKY level, which activates an additional tier of
+	// rules covering redundancy, style, and agreement patterns.
+	Picky bool
+
+	// EnableTempOff enables LT rules currently marked as TEMP_OFF (under
+	// active development).  These are typically high-precision but may have
+	// edge cases not yet filed as bugs.
+	EnableTempOff bool
+
+	// MultiPass runs the correction pipeline up to MaxPasses times.  Each
+	// pass feeds the previous output back into LT.  This catches cascading
+	// errors (e.g. a contraction fix in pass 1 enables an agreement fix in
+	// pass 2).  Stops early when output is identical to input.
+	MultiPass bool
+
+	// MaxPasses caps the number of multi-pass iterations.  Default: 2.
+	MaxPasses int
+
+	// ServerURL is the base URL of a local LanguageTool HTTP server.
 	ServerURL string
 
 	// JVMMaxHeap caps the JVM heap used when running the CLI JAR.
-	// Examples: "256m", "512m".  Default: "256m".
 	JVMMaxHeap string
 }
 
-// DefaultEngineConfig returns production-safe defaults that maximise recall
-// while minimising false positives for general English writing.
+// DefaultEngineConfig returns maximum-accuracy defaults for English writing.
+// Runs all LT rule categories, PICKY level, multi-pass, and explicitly enables
+// a curated set of high-value rules that may be off in some LT versions.
 func DefaultEngineConfig() EngineConfig {
 	return EngineConfig{
-		Lang:       "en-US",
-		JVMMaxHeap: "256m",
-		ConfidenceMin: 60,
+		Lang:          "en-US",
+		JVMMaxHeap:    "256m",
+		ConfidenceMin: 55, // slightly lower than before; PICKY + filtering compensates
+		Picky:         true,
+		EnableTempOff: false, // conservative default; set GRAMFIX_ENABLE_TEMP_OFF=true to try
+		MultiPass:     true,
+		MaxPasses:     2,
 		DisabledRules: []string{
-			// Casing rules fire constantly on code identifiers
+			// Casing: fires constantly on code identifiers and acronyms
 			"UPPERCASE_SENTENCE_START",
 			"WORD_CONTAINS_UPPERCASE",
-			// Typographic preferences — not grammar errors
+			// Typographic preferences, not grammar errors
 			"EN_QUOTES",
 			"DASH_RULE",
 			"UNLIKELY_OPENING_PUNCTUATION",
 			"ARROWS",
-			// Noisy / low-precision
+			// Whitespace: too many false positives in pasted text
 			"WHITESPACE_RULE",
+			// Style-only / paraphrase suggestions (not corrections)
+			"SENT_START_CONJUNCTIVE_LINKING_ADVERB_COMMA",
+			"COMMA_PARENTHESIS_WHITESPACE",
 		},
-		EnabledCategories: []string{
-			"TYPOS",
-			"GRAMMAR",
-			"CASING",
-			"CONFUSED_WORDS",
-			"PUNCTUATION",
-			"COMPOUNDING",
-			"SEMANTICS",
+		// Leave EnabledCategories empty to run ALL LT categories.
+		// Confidence filtering + DisabledRules handles false positives.
+		EnabledCategories: []string{},
+		// Explicitly enable high-value rules that may be off in some LT builds.
+		EnabledRules: []string{
+			// Contraction errors: dont, cant, wont, its (possessive vs it's)
+			"EN_CONTRACTION_SPELLING",
+			// it's vs its, their/they're/there
+			"IT_IS", "IT_IS_2", "ITS_TO_IT_S",
+			// "me and John" in subject position
+			"CONFUSION_OF_ME_I",
+			// subject-verb at sentence start
+			"AGREEMENT_SENT_START",
+			// comparative: "more smarter"
+			"MOST_COMPARATIVE",
+			// fastly, tiredly, and other non-words
+			"FASTLY",
+			// double negatives, e.g. "didn't do nothing"
+			"DOUBLE_NEGATIVE",
+			// "everyday" vs "every day"
+			"EVERYDAY_EVERY_DAY",
+			// "could care less" vs "couldn't care less"
+			"COULD_CARE_LESS",
+			// "different than" vs "different from"
+			"DIFFERENT_THAN",
+			// "for free" vs "free" (PICKY)
+			"FOR_FREE",
 		},
 	}
 }
@@ -163,17 +207,40 @@ func findJar() string {
 	return ""
 }
 
-// Fix runs grammar correction on the provided text and returns corrected text.
-// It tries the HTTP server first (if configured), then falls back to the CLI JAR.
+// Fix runs grammar correction, optionally in multiple passes.
+// Each pass feeds the previous output back into LT; stops early on convergence.
 func (e *Engine) Fix(ctx context.Context, text string) (string, error) {
 	if strings.TrimSpace(text) == "" {
 		return text, nil
 	}
 
-	// ── Normalise input for LT ───────────────────────────────────────────
-	// normalizeForLT returns a lightly-cleaned copy of the text.  We send
-	// the normalised version to LT but patch the *original* text so that
-	// formatting (smart quotes, em-dashes) is preserved in the output.
+	maxPasses := 1
+	if e.cfg.MultiPass && e.cfg.MaxPasses > 1 {
+		maxPasses = e.cfg.MaxPasses
+	}
+
+	current := text
+	for pass := 0; pass < maxPasses; pass++ {
+		next, err := e.fixOnce(ctx, current)
+		if err != nil {
+			if pass == 0 {
+				return text, err // first pass failed: return original
+			}
+			return current, nil // partial progress: return what we have
+		}
+		if next == current {
+			log.Debug("converged after %d pass(es)", pass+1)
+			break
+		}
+		log.Debug("pass %d: %d -> %d chars", pass+1, len(current), len(next))
+		current = next
+	}
+	return current, nil
+}
+
+// fixOnce runs a single correction pass.
+func (e *Engine) fixOnce(ctx context.Context, text string) (string, error) {
+	// Normalise input for LT: clean CRLF, smart quotes, NBSP.
 	normalized, sameOffsets := normalizeForLT(text)
 	inputForLT := normalized
 	textForPatching := text
@@ -258,34 +325,39 @@ func (e *Engine) fixViaCLI(ctx context.Context, inputForLT, textForPatching, ori
 
 // buildCLIArgs constructs the full java arg list for the LT CLI invocation.
 func (e *Engine) buildCLIArgs(inputFile string) []string {
-	// ── JVM flags ────────────────────────────────────────────────────────
-	// Tuned for ephemeral (< 5 s) invocations: small heap, serial GC,
-	// stop JIT after tier-1 (interpreted + simple inlining only).
+	// JVM flags: tuned for ephemeral (<5s) invocations.
 	args := []string{
 		"-Xms64m",
 		"-Xmx" + e.cfg.JVMMaxHeap,
-		"-XX:+UseSerialGC",            // minimal GC overhead for small heaps
-		"-XX:TieredStopAtLevel=1",     // no full JIT; saves 200–400 ms
+		"-XX:+UseSerialGC",
+		"-XX:TieredStopAtLevel=1",
 		"-XX:+DisableExplicitGC",
-		"-Dfile.encoding=UTF-8",       // ensure UTF-8 I/O in the JVM
+		"-Dfile.encoding=UTF-8",
 	}
 
-	// ── LT JAR ──────────────────────────────────────────────────────────
 	args = append(args, "-jar", e.jarPath)
-
-	// ── LT flags ─────────────────────────────────────────────────────────
 	args = append(args,
 		"--language", e.cfg.Lang,
 		"--encoding", "utf-8",
 		"--json",
 	)
 
+	// PICKY level: enables an additional tier of LT rules
+	if e.cfg.Picky {
+		args = append(args, "--level", "PICKY")
+	}
+	// TEMP_OFF: enable rules currently marked as temporarily disabled
+	if e.cfg.EnableTempOff {
+		args = append(args, "--enable-temp-off")
+	}
 	if len(e.cfg.EnabledCategories) > 0 {
-		// LT CLI uses --enablecategories (all lowercase, no camel case)
 		args = append(args, "--enablecategories", strings.Join(e.cfg.EnabledCategories, ","))
 	}
+	if len(e.cfg.EnabledRules) > 0 {
+		// -e enables specific rules even if their category is disabled
+		args = append(args, "-e", strings.Join(e.cfg.EnabledRules, ","))
+	}
 	if len(e.cfg.DisabledRules) > 0 {
-		// LT CLI uses -d / --disable
 		args = append(args, "-d", strings.Join(e.cfg.DisabledRules, ","))
 	}
 	if e.cfg.NgramDir != "" {
@@ -293,14 +365,12 @@ func (e *Engine) buildCLIArgs(inputFile string) []string {
 	}
 	if e.cfg.CustomRulesFile != "" {
 		if _, err := os.Stat(e.cfg.CustomRulesFile); err == nil {
-			// LT CLI uses --rulefile (singular, no capital F)
 			args = append(args, "--rulefile", e.cfg.CustomRulesFile)
 		} else {
 			log.Warn("custom rules file not found: %s", e.cfg.CustomRulesFile)
 		}
 	}
 
-	// Input file must be last
 	args = append(args, inputFile)
 	return args
 }

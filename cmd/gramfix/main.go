@@ -26,8 +26,7 @@ const version = "1.1.0"
 // lockFile prevents concurrent runs from key-repeat events.
 const lockFile = "/tmp/gramfix.lock"
 
-// lockTimeout is how long we wait for an existing run to finish before aborting.
-const lockTimeout = 2 * time.Second
+
 
 func main() {
 	// ── CLI flags ────────────────────────────────────────────────────────
@@ -40,9 +39,14 @@ func main() {
 		customRules   = flag.String("rules", os.Getenv("GRAMFIX_CUSTOM_RULES"), "path to custom LT XML rules file")
 		serverURL     = flag.String("server", os.Getenv("GRAMFIX_LT_SERVER_URL"), "local LT server URL (e.g. http://localhost:8081)")
 		disabledRules = flag.String("disabled-rules", os.Getenv("GRAMFIX_DISABLED_RULES"), "comma-separated LT rule IDs to disable")
+		enabledRules  = flag.String("enabled-rules", os.Getenv("GRAMFIX_ENABLED_RULES"), "comma-separated LT rule IDs to force-enable")
 		enabledCats   = flag.String("enabled-categories", os.Getenv("GRAMFIX_ENABLED_CATEGORIES"), "comma-separated LT category IDs to enable")
-		confidence    = flag.Int("confidence", envInt("GRAMFIX_CONFIDENCE", 60), "minimum match confidence 0-100")
+		confidence    = flag.Int("confidence", envInt("GRAMFIX_CONFIDENCE", 55), "minimum match confidence 0-100")
 		jvmMaxHeap    = flag.String("jvm-heap", envOr("GRAMFIX_JVM_XMX", "256m"), "JVM max heap for LT CLI (e.g. 256m)")
+		picky         = flag.Bool("picky", !envBool("GRAMFIX_NO_PICKY"), "enable LT PICKY level (more rules, default: on)")
+		enableTempOff = flag.Bool("temp-off", envBool("GRAMFIX_ENABLE_TEMP_OFF"), "enable LT TEMP_OFF rules (experimental)")
+		multiPass     = flag.Bool("multi-pass", !envBool("GRAMFIX_NO_MULTI_PASS"), "run correction in multiple passes (default: on)")
+		maxPasses     = flag.Int("max-passes", envInt("GRAMFIX_MAX_PASSES", 2), "maximum number of correction passes")
 		stdinMode     = flag.Bool("stdin", false, "read text from stdin, write corrected text to stdout, then exit (no clipboard/injection)")
 	)
 	flag.Parse()
@@ -65,18 +69,25 @@ func main() {
 		}
 	}
 
-	// ── Build engine config (shared by all modes) ─────────────────────────
+	// Build engine config (shared by all modes)
 	engCfg := grammar.DefaultEngineConfig()
 	engCfg.Lang = *lang
 	engCfg.NgramDir = *ngramDir
 	engCfg.CustomRulesFile = *customRules
 	engCfg.ServerURL = *serverURL
 	engCfg.JVMMaxHeap = *jvmMaxHeap
+	engCfg.Picky = *picky
+	engCfg.EnableTempOff = *enableTempOff
+	engCfg.MultiPass = *multiPass
+	engCfg.MaxPasses = *maxPasses
 	if *confidence > 0 {
 		engCfg.ConfidenceMin = *confidence
 	}
 	if *disabledRules != "" {
 		engCfg.DisabledRules = splitCSV(*disabledRules)
+	}
+	if *enabledRules != "" {
+		engCfg.EnabledRules = splitCSV(*enabledRules)
 	}
 	if *enabledCats != "" {
 		engCfg.EnabledCategories = splitCSV(*enabledCats)
