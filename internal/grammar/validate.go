@@ -48,7 +48,7 @@ func validateCorrection(original, corrected string) error {
 }
 
 func commonPrefixRunes(a, b string) int {
-	ra, rb := []rune(a), []rune(b)
+	ra, rb := []rune(strings.ToLower(a)), []rune(strings.ToLower(b))
 	n := len(ra)
 	if len(rb) < n {
 		n = len(rb)
@@ -62,7 +62,7 @@ func commonPrefixRunes(a, b string) int {
 }
 
 func commonSuffixRunes(a, b string) int {
-	ra, rb := []rune(a), []rune(b)
+	ra, rb := []rune(strings.ToLower(a)), []rune(strings.ToLower(b))
 	la, lb := len(ra), len(rb)
 	n := la
 	if lb < n {

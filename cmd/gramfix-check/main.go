@@ -20,6 +20,7 @@ type checkResult struct {
 }
 
 func main() {
+	env.LoadDotEnv()
 	fmt.Printf("gramfix-check v%s\n\n", version)
 
 	var results []checkResult
@@ -111,6 +112,31 @@ func main() {
 				return ltErr.Error()
 			}
 			return "found"
+		}(),
+	})
+
+	// ── Cloud Engines ─────────────────────────────────────────────────────
+	groqKey := os.Getenv("GROQ_API_KEY")
+	results = append(results, checkResult{
+		name:   "Groq API Key",
+		ok:     groqKey != "",
+		detail: func() string {
+			if groqKey == "" {
+				return "not set (offline-only mode)"
+			}
+			return "found (masked: " + maskKey(groqKey) + ")"
+		}(),
+	})
+
+	orKey := os.Getenv("OPENROUTER_API_KEY")
+	results = append(results, checkResult{
+		name:   "OpenRouter API Key",
+		ok:     orKey != "",
+		detail: func() string {
+			if orKey == "" {
+				return "not set"
+			}
+			return "found (masked: " + maskKey(orKey) + ")"
 		}(),
 	})
 
@@ -220,4 +246,11 @@ func isServiceActive(name string) bool {
 		}
 	}
 	return status == "active"
+}
+
+func maskKey(key string) string {
+	if len(key) <= 8 {
+		return "****"
+	}
+	return key[:4] + "..." + key[len(key)-4:]
 }

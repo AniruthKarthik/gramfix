@@ -56,6 +56,7 @@ The grammar package is split into focused files:
 |------------------|------------------------------------------------------------------|
 | `engine.go`      | `EngineConfig`, CLI invocation, byte-offset patching, JVM flags |
 | `server.go`      | HTTP client for optional local LT server; falls back to CLI     |
+| `openrouter.go`  | Cloud-enhanced grammar correction via OpenRouter API            |
 | `confidence.go`  | Per-category and per-rule confidence scores (0-100)             |
 | `normalize.go`   | Input normalization before sending to LT (CRLF, smart quotes)   |
 | `validate.go`    | Post-correction sanity check (length ratio, prefix/suffix)      |
@@ -154,13 +155,15 @@ gramfix-hotkey (always running, ~4MB)
                 +-- Read clipboard + primary selection
                 +-- Normalize input (CRLF, smart quotes, NBSP)
                 +-- Write placeholder -> wl-copy (bg) -> Ctrl+V -> kill wl-copy
+                +-- Try OpenRouter API (if OPENROUTER_API_KEY is set, ~1-2s)
+                |     fallback: local LanguageTool
                 +-- Try LT HTTP server (if GRAMFIX_LT_SERVER_URL is set, ~150ms)
                 |     fallback: java -jar LT.jar (JVM, ~200-300MB, 2-4s)
                 +-- Filter by confidence, resolve overlaps, patch bytes
                 +-- Validate correction (length ratio guard)
                 +-- Write corrected -> wl-copy (bg) -> Ctrl+V -> kill wl-copy
                 +-- Write original -> wl-copy (bg) [stays alive: user's clipboard]
-                +-- exit(0)  -- total runtime: ~3-5s CLI, ~0.5s server mode
+                +-- exit(0)  -- total runtime: ~3-5s CLI, ~1-2s OpenRouter, ~0.5s server mode
 ```
 
 After gramfix exits:

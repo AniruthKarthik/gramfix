@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/anilnair00/gramfix/internal/core"
+	"github.com/anilnair00/gramfix/internal/env"
 	"github.com/anilnair00/gramfix/internal/grammar"
 	"github.com/anilnair00/gramfix/internal/log"
 )
@@ -29,6 +30,9 @@ const lockFile = "/tmp/gramfix.lock"
 
 
 func main() {
+	// ── Load .env ────────────────────────────────────────────────────────
+	env.LoadDotEnv()
+
 	// ── CLI flags ────────────────────────────────────────────────────────
 	var (
 		lang          = flag.String("lang", envOr("GRAMFIX_LANG", "en-US"), "LanguageTool language code")
@@ -48,6 +52,10 @@ func main() {
 		multiPass     = flag.Bool("multi-pass", !envBool("GRAMFIX_NO_MULTI_PASS"), "run correction in multiple passes (default: on)")
 		maxPasses     = flag.Int("max-passes", envInt("GRAMFIX_MAX_PASSES", 2), "maximum number of correction passes")
 		stdinMode     = flag.Bool("stdin", false, "read text from stdin, write corrected text to stdout, then exit (no clipboard/injection)")
+		orAPIKey      = flag.String("openrouter-key", os.Getenv("OPENROUTER_API_KEY"), "OpenRouter API key")
+		orModel       = flag.String("openrouter-model", envOr("OPENROUTER_MODEL", ""), "OpenRouter model (overrides default free list)")
+		groqAPIKey    = flag.String("groq-key", os.Getenv("GROQ_API_KEY"), "Groq API key")
+		groqModel     = flag.String("groq-model", envOr("GROQ_MODEL", ""), "Groq model (overrides default list)")
 	)
 	flag.Parse()
 
@@ -63,7 +71,7 @@ func main() {
 	if *logFile {
 		f, err := log.LogFile()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "log file error: %v\n", err)
+			fmt.Fprintf(os.Stderr, "log file error: %v (dir: %s)\n", err, log.LogDir())
 		} else {
 			defer f.Close()
 		}
@@ -80,6 +88,10 @@ func main() {
 	engCfg.EnableTempOff = *enableTempOff
 	engCfg.MultiPass = *multiPass
 	engCfg.MaxPasses = *maxPasses
+	engCfg.OpenRouterAPIKey = *orAPIKey
+	engCfg.OpenRouterModel = *orModel
+	engCfg.GroqAPIKey = *groqAPIKey
+	engCfg.GroqModel = *groqModel
 	if *confidence > 0 {
 		engCfg.ConfidenceMin = *confidence
 	}

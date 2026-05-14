@@ -30,6 +30,21 @@ install: build
 	install -m 755 $(BUILD_DIR)/$(HOTKEY_NAME)  $(INSTALL_DIR)/$(HOTKEY_NAME)
 	install -m 755 $(BUILD_DIR)/$(CHECK_NAME)   $(INSTALL_DIR)/$(CHECK_NAME)
 	@echo "Installed to $(INSTALL_DIR)"
+	@mkdir -p $(HOME)/.config/gramfix
+	@if [ ! -f $(HOME)/.config/gramfix/.env ]; then \
+		echo "--- Groq API Setup ---"; \
+		read -p "Enter your GROQ_API_KEY (leave empty to skip): " key; \
+		if [ ! -z "$$key" ]; then \
+			echo "GROQ_API_KEY=$$key" > $(HOME)/.config/gramfix/.env; \
+			echo "Saved to $(HOME)/.config/gramfix/.env"; \
+		fi; \
+	else \
+		echo "Config folder already exists: $(HOME)/.config/gramfix"; \
+	fi
+	@echo ""
+	@echo "Log file: $(HOME)/.local/share/gramfix/gramfix.log"
+	@echo "Log format: date, time, sentence, method, corrected version"
+	@echo ""
 	@echo "Run 'make systemd' to install the systemd user service"
 
 ## systemd: install and enable the systemd user service for the hotkey daemon

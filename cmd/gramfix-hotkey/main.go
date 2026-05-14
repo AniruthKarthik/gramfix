@@ -23,6 +23,7 @@ import (
 const version = "1.0.0"
 
 func main() {
+	env.LoadDotEnv()
 	var (
 		gramfixBin = flag.String("gramfix", "", "path to gramfix binary (auto-detected if empty)")
 		lang       = flag.String("lang", "en-US", "LanguageTool language code")

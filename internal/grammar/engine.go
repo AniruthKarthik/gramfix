@@ -79,6 +79,18 @@ type EngineConfig struct {
 
 	// JVMMaxHeap caps the JVM heap used when running the CLI JAR.
 	JVMMaxHeap string
+
+	// OpenRouterAPIKey is the API key for OpenRouter.
+	OpenRouterAPIKey string
+
+	// OpenRouterModel is the model to use for OpenRouter (e.g. google/gemini-2.5-flash).
+	OpenRouterModel string
+
+	// GroqAPIKey is the API key for Groq.
+	GroqAPIKey string
+
+	// GroqModel is the model to use for Groq (e.g. llama-3.3-70b-versatile).
+	GroqModel string
 }
 
 // DefaultEngineConfig returns maximum-accuracy defaults for English writing.
@@ -214,6 +226,26 @@ func (e *Engine) Fix(ctx context.Context, text string) (string, error) {
 		return text, nil
 	}
 
+	// ── Try Groq first if configured ────────────────────────────────────
+	if e.cfg.GroqAPIKey != "" {
+		corrected, err := e.fixViaGroq(ctx, text)
+		if err != nil {
+			log.Debug("Groq error: %v — falling back to next engine", err)
+		} else {
+			return corrected, nil
+		}
+	}
+
+	// ── Try OpenRouter next if configured ──────────────────────────────
+	if e.cfg.OpenRouterAPIKey != "" {
+		corrected, err := e.fixViaOpenRouter(ctx, text)
+		if err != nil {
+			log.Debug("OpenRouter error: %v — falling back to LanguageTool", err)
+		} else {
+			return corrected, nil
+		}
+	}
+
 	maxPasses := 1
 	if e.cfg.MultiPass && e.cfg.MaxPasses > 1 {
 		maxPasses = e.cfg.MaxPasses
@@ -262,6 +294,7 @@ func (e *Engine) fixOnce(ctx context.Context, text string) (string, error) {
 				return text, nil
 			}
 			log.Info("grammar fix via server: %d → %d chars", len(text), len(corrected))
+			log.Audit(text, "Local Server", corrected)
 			return corrected, nil
 		}
 	}
@@ -320,6 +353,7 @@ func (e *Engine) fixViaCLI(ctx context.Context, inputForLT, textForPatching, ori
 	}
 
 	log.Info("grammar fix via CLI: %d → %d chars", len(originalText), len(corrected))
+	log.Audit(originalText, "Local CLI", corrected)
 	return corrected, nil
 }
 

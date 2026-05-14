@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -51,9 +52,25 @@ func (l *Logger) log(level Level, msg string, args ...any) {
 	if level < l.level {
 		return
 	}
-	ts := time.Now().Format("15:04:05.000")
-	line := fmt.Sprintf("[%s] %s [%s] %s", ts, levelNames[level], l.prefix, fmt.Sprintf(msg, args...))
+	ts := time.Now().Format("2006-01-02 15:04:05")
+	line := fmt.Sprintf("[%s] %s: %s", ts, levelNames[level], fmt.Sprintf(msg, args...))
 	fmt.Fprintln(l.w, line)
+}
+
+// Audit logs a correction in a structured format: date, time, sentence, method, corrected
+func Audit(original, method, corrected string) {
+	now := time.Now()
+	date := now.Format("2006-01-02")
+	timeStr := now.Format("15:04:05")
+
+	// Escape quotes for CSV-like safety
+	origEsc := strings.ReplaceAll(original, "\"", "\"\"")
+	corrEsc := strings.ReplaceAll(corrected, "\"", "\"\"")
+
+	line := fmt.Sprintf("%s, %s, \"%s\", %s, \"%s\"", date, timeStr, origEsc, method, corrEsc)
+	if std.w != nil {
+		fmt.Fprintln(std.w, line)
+	}
 }
 
 // Debug logs a debug message.
@@ -68,9 +85,14 @@ func Warn(msg string, args ...any) { std.log(LevelWarn, msg, args...) }
 // Error logs an error message.
 func Error(msg string, args ...any) { std.log(LevelError, msg, args...) }
 
+// LogDir returns the directory where logs are stored.
+func LogDir() string {
+	return filepath.Join(os.Getenv("HOME"), ".local", "share", "gramfix")
+}
+
 // LogFile opens or creates a log file inside ~/.local/share/gramfix/gramfix.log.
 func LogFile() (*os.File, error) {
-	dir := filepath.Join(os.Getenv("HOME"), ".local", "share", "gramfix")
+	dir := LogDir()
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return nil, err
 	}
@@ -78,6 +100,8 @@ func LogFile() (*os.File, error) {
 	if err != nil {
 		return nil, err
 	}
+	// For audit simplicity, we'll write to the file only if requested, 
+	// otherwise stderr is the default for general logs.
 	std.w = io.MultiWriter(os.Stderr, f)
 	return f, nil
 }
