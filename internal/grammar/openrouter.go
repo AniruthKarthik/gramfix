@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/anilnair00/gramfix/internal/log"
+	"github.com/AniruthKarthik/gramfix/internal/log"
 )
 
 const (
@@ -155,7 +155,7 @@ func (e *Engine) doRequest(ctx context.Context, text, model string) (string, err
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+e.cfg.OpenRouterAPIKey)
-	req.Header.Set("HTTP-Referer", "https://github.com/anilnair00/gramfix")
+	req.Header.Set("HTTP-Referer", "https://github.com/AniruthKarthik/gramfix")
 	req.Header.Set("X-Title", "gramfix")
 
 	client := &http.Client{}

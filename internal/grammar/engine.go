@@ -15,7 +15,7 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/anilnair00/gramfix/internal/log"
+	"github.com/AniruthKarthik/gramfix/internal/log"
 )
 
 // Well-known paths where LanguageTool JARs may be installed.

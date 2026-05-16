@@ -1,3 +1,3 @@
-module github.com/anilnair00/gramfix
+module github.com/AniruthKarthik/gramfix
 
-go 1.25.9
+go 1.21

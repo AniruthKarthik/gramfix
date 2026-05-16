@@ -1,6 +1,6 @@
 [Unit]
 Description=GramFix Hotkey Daemon (Alt+G grammar correction)
-Documentation=https://github.com/anilnair00/gramfix
+Documentation=https://github.com/AniruthKarthik/gramfix
 After=graphical-session.target
 PartOf=graphical-session.target
 

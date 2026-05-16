@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/anilnair00/gramfix/internal/log"
+	"github.com/AniruthKarthik/gramfix/internal/log"
 )
 
 const (

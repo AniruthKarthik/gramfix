@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/anilnair00/gramfix/internal/grammar"
-	"github.com/anilnair00/gramfix/internal/log"
+	"github.com/AniruthKarthik/gramfix/internal/grammar"
+	"github.com/AniruthKarthik/gramfix/internal/log"
 )
 
 func main() {

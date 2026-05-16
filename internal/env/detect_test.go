@@ -3,7 +3,7 @@ package env_test
 import (
 	"testing"
 
-	"github.com/anilnair00/gramfix/internal/env"
+	"github.com/AniruthKarthik/gramfix/internal/env"
 )
 
 func TestDetect(t *testing.T) {

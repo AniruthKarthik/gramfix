@@ -10,8 +10,8 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/anilnair00/gramfix/internal/env"
-	"github.com/anilnair00/gramfix/internal/log"
+	"github.com/AniruthKarthik/gramfix/internal/env"
+	"github.com/AniruthKarthik/gramfix/internal/log"
 )
 
 const injectTimeout = 15 * time.Second

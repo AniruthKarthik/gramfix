@@ -15,11 +15,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/anilnair00/gramfix/adapters/clipboard"
-	"github.com/anilnair00/gramfix/adapters/injector"
-	"github.com/anilnair00/gramfix/internal/env"
-	"github.com/anilnair00/gramfix/internal/grammar"
-	"github.com/anilnair00/gramfix/internal/log"
+	"github.com/AniruthKarthik/gramfix/adapters/clipboard"
+	"github.com/AniruthKarthik/gramfix/adapters/injector"
+	"github.com/AniruthKarthik/gramfix/internal/env"
+	"github.com/AniruthKarthik/gramfix/internal/grammar"
+	"github.com/AniruthKarthik/gramfix/internal/log"
 )
 
 // Placeholder is the temporary text shown while grammar correction runs.

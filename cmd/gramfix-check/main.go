@@ -7,8 +7,8 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/anilnair00/gramfix/internal/env"
-	"github.com/anilnair00/gramfix/internal/grammar"
+	"github.com/AniruthKarthik/gramfix/internal/env"
+	"github.com/AniruthKarthik/gramfix/internal/grammar"
 )
 
 const version = "1.0.0"

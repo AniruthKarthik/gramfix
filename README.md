@@ -23,7 +23,7 @@ Select text in any application, press **Alt+G**, and GramFix corrects your gramm
 ## Installation
 
 ```bash
-git clone https://github.com/anilnair00/gramfix
+git clone https://github.com/AniruthKarthik/gramfix
 cd gramfix
 ./install.sh   # Installs system dependencies
 make install   # Builds binaries and prompts for GROQ_API_KEY

@@ -1,6 +1,6 @@
 [Unit]
 Description=LanguageTool local HTTP server (GramFix)
-Documentation=https://github.com/anilnair00/gramfix
+Documentation=https://github.com/AniruthKarthik/gramfix
 After=network.target
 
 [Service]

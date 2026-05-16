@@ -10,7 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/anilnair00/gramfix/internal/grammar"
+	"github.com/AniruthKarthik/gramfix/internal/grammar"
 )
 
 func findJar() string {

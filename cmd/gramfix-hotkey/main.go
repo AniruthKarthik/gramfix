@@ -15,9 +15,9 @@ import (
 	"path/filepath"
 	"syscall"
 
-	"github.com/anilnair00/gramfix/adapters/hotkey"
-	"github.com/anilnair00/gramfix/internal/env"
-	"github.com/anilnair00/gramfix/internal/log"
+	"github.com/AniruthKarthik/gramfix/adapters/hotkey"
+	"github.com/AniruthKarthik/gramfix/internal/env"
+	"github.com/AniruthKarthik/gramfix/internal/log"
 )
 
 const version = "1.0.0"

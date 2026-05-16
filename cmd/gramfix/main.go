@@ -16,10 +16,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/anilnair00/gramfix/internal/core"
-	"github.com/anilnair00/gramfix/internal/env"
-	"github.com/anilnair00/gramfix/internal/grammar"
-	"github.com/anilnair00/gramfix/internal/log"
+	"github.com/AniruthKarthik/gramfix/internal/core"
+	"github.com/AniruthKarthik/gramfix/internal/env"
+	"github.com/AniruthKarthik/gramfix/internal/grammar"
+	"github.com/AniruthKarthik/gramfix/internal/log"
 )
 
 const version = "1.1.0"

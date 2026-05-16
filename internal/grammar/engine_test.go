@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/anilnair00/gramfix/internal/grammar"
+	"github.com/AniruthKarthik/gramfix/internal/grammar"
 )
 
 func TestNewEngine_NoJava(t *testing.T) {
