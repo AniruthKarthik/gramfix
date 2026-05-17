@@ -45,8 +45,8 @@ func (e *Engine) fixViaGroq(ctx context.Context, text string) (string, error) {
 	}
 
 	models := []string{
-		"llama-4-scout-17b-16e",
-		"llama-3.3-70b-versatile",
+		"meta-llama/llama-4-scout-17b-16e-instruct",
+		"openai/gpt-oss-20b",
 		"llama-3.1-8b-instant",
 	}
 
